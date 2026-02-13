@@ -107,9 +107,9 @@ const startServer = async () => {
   try {
     await connectDB();
     app.listen(PORT, () => {
-      logger.info(`🚀 TaskFlow API running on port ${PORT}`);
-      logger.info(`📖 API Docs available at http://localhost:${PORT}/api-docs`);
-      logger.info(`🌍 Environment: ${process.env.NODE_ENV}`);
+      logger.info(` TaskFlow API running on port ${PORT}`);
+      logger.info(` API Docs available at http://localhost:${PORT}/api-docs`);
+      logger.info(` Environment: ${process.env.NODE_ENV}`);
     });
   } catch (error) {
     logger.error('Failed to start server:', error);
