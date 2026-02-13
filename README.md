@@ -321,7 +321,8 @@ All responses follow a consistent format:
 
 ---
 
-## License
+👨‍💻 Author
 
-MIT — Built for the PrimeTrade Backend Developer Intern Assignment
->>>>>>> 71b5df1 (Initial project setup)
+Harshit Shukla
+Backend Developer | Full Stack Enthusiast
+Final Year B.Tech Student
