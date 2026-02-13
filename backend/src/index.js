@@ -23,14 +23,14 @@ const adminRoutes = require('./routes/v1/admin.routes');
 
 const app = express();
 
-// ─── Security Middleware ─────────────────────────────────────────────────────
+// Security Middleware 
 app.use(helmet({
-  contentSecurityPolicy: false, // Disabled to allow Swagger UI
+  contentSecurityPolicy: false, 
 }));
-app.use(mongoSanitize());  // Prevent NoSQL injection
-app.use(xss());             // Sanitize input against XSS
+app.use(mongoSanitize());  
+app.use(xss());            
 
-// ─── Rate Limiting ───────────────────────────────────────────────────────────
+//  Rate Limiting
 const limiter = rateLimit({
   windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000,
   max: parseInt(process.env.RATE_LIMIT_MAX) || 100,
@@ -48,7 +48,7 @@ const authLimiter = rateLimit({
 app.use('/api/', limiter);
 app.use('/api/v1/auth/', authLimiter);
 
-// ─── General Middleware ──────────────────────────────────────────────────────
+// General Middleware 
 app.use(cors({
   origin: process.env.CLIENT_URL || 'http://localhost:3000',
   credentials: true,
@@ -59,7 +59,7 @@ app.use(compression());
 app.use(express.json({ limit: '10kb' }));  // Limit body size
 app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 
-// ─── Logging ─────────────────────────────────────────────────────────────────
+// Logging
 if (process.env.NODE_ENV === 'development') {
   app.use(morgan('dev'));
 } else {
@@ -68,7 +68,7 @@ if (process.env.NODE_ENV === 'development') {
   }));
 }
 
-// ─── Health Check ─────────────────────────────────────────────────────────────
+// Health Check 
 app.get('/health', (req, res) => {
   res.status(200).json({
     success: true,
@@ -79,13 +79,13 @@ app.get('/health', (req, res) => {
   });
 });
 
-// ─── API Routes (Versioned) ───────────────────────────────────────────────────
+// API Routes (Versioned) 
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/users', userRoutes);
 app.use('/api/v1/tasks', taskRoutes);
 app.use('/api/v1/admin', adminRoutes);
 
-// ─── Swagger API Documentation ────────────────────────────────────────────────
+// Swagger API Documentation 
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
   customSiteTitle: 'TaskFlow API Docs',
   customCss: '.swagger-ui .topbar { background: #0f172a; }',
@@ -96,11 +96,21 @@ app.get('/api-docs.json', (req, res) => {
   res.send(swaggerSpec);
 });
 
-// ─── 404 & Error Handling ─────────────────────────────────────────────────────
+app.get('/', (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: 'Welcome to TaskFlow API 🚀',
+    documentation: '/api-docs',
+    healthCheck: '/health'
+  });
+});
+
+
+// 404 & Error Handling 
 app.use(notFound);
 app.use(errorHandler);
 
-// ─── Start Server ─────────────────────────────────────────────────────────────
+// Start Server 
 const PORT = process.env.PORT || 5000;
 
 const startServer = async () => {
