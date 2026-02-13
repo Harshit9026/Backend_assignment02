@@ -1,0 +1,100 @@
+version: '3.8'
+
+services:
+  # MongoDB Database
+  mongodb:
+    image: mongo:7.0
+    container_name: taskflow-db
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: taskflow
+      MONGO_INITDB_ROOT_PASSWORD: taskflow_secret
+      MONGO_INITDB_DATABASE: taskflow
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - taskflow-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis Cache (Optional)
+  redis:
+    image: redis:7.2-alpine
+    container_name: taskflow-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - taskflow-network
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Backend API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: taskflow-api
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 5000
+      MONGODB_URI: mongodb://taskflow:taskflow_secret@mongodb:27017/taskflow?authSource=admin
+      JWT_SECRET: ${JWT_SECRET:-super_secret_key_change_in_production_minimum_32_chars}
+      JWT_EXPIRE: 7d
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-refresh_secret_key_change_in_production}
+      JWT_REFRESH_EXPIRE: 30d
+      REDIS_URL: redis://redis:6379
+      CLIENT_URL: http://localhost:3000
+    ports:
+      - "5000:5000"
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - taskflow-network
+    volumes:
+      - ./backend/logs:/app/logs
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Frontend (Production build via nginx)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: taskflow-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      - taskflow-network
+
+volumes:
+  mongo_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  taskflow-network:
+    driver: bridge

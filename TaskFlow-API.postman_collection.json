@@ -1,0 +1,379 @@
+{
+  "info": {
+    "name": "TaskFlow API",
+    "_postman_id": "taskflow-api-v1",
+    "description": "Complete Postman collection for TaskFlow REST API\n\n## Setup\n1. Import this collection into Postman\n2. Set the `baseUrl` variable to `http://localhost:5000`\n3. Run **Register** or **Login** first — the token is auto-saved to `authToken`\n4. All protected endpoints automatically use the saved token\n\n## Roles\n- **user** — default role, manages own tasks\n- **admin** — full access to user management + all tasks",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:5000", "type": "string" },
+    { "key": "authToken", "value": "", "type": "string" },
+    { "key": "refreshToken", "value": "", "type": "string" },
+    { "key": "taskId", "value": "", "type": "string" },
+    { "key": "userId", "value": "", "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "🔐 Auth",
+      "item": [
+        {
+          "name": "Register",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  const json = pm.response.json();",
+                  "  pm.collectionVariables.set('authToken', json.token);",
+                  "  pm.collectionVariables.set('refreshToken', json.refreshToken);",
+                  "  pm.collectionVariables.set('userId', json.user._id);",
+                  "  pm.test('Registration successful', () => pm.response.to.have.status(201));",
+                  "  pm.test('Token returned', () => pm.expect(json.token).to.be.a('string'));",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/v1/auth/register",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"John Doe\",\n  \"email\": \"john@example.com\",\n  \"password\": \"Secure@123\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const json = pm.response.json();",
+                  "  pm.collectionVariables.set('authToken', json.token);",
+                  "  pm.collectionVariables.set('refreshToken', json.refreshToken);",
+                  "  pm.collectionVariables.set('userId', json.user._id);",
+                  "  pm.test('Login successful', () => pm.response.to.have.status(200));",
+                  "  pm.test('Token returned', () => pm.expect(json.token).to.be.a('string'));",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/v1/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"john@example.com\",\n  \"password\": \"Secure@123\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Get Current User (me)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "url": "{{baseUrl}}/api/v1/auth/me"
+          }
+        },
+        {
+          "name": "Refresh Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const json = pm.response.json();",
+                  "  pm.collectionVariables.set('authToken', json.token);",
+                  "  pm.collectionVariables.set('refreshToken', json.refreshToken);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/v1/auth/refresh",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Update Password",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{authToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/api/v1/auth/update-password",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"currentPassword\": \"Secure@123\",\n  \"newPassword\": \"NewSecure@456\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "url": "{{baseUrl}}/api/v1/auth/logout"
+          }
+        }
+      ]
+    },
+    {
+      "name": "✅ Tasks",
+      "item": [
+        {
+          "name": "Get All Tasks",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tasks?page=1&limit=10&status=&priority=&search=",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "tasks"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "10" },
+                { "key": "status", "value": "", "description": "todo | in-progress | completed" },
+                { "key": "priority", "value": "", "description": "low | medium | high" },
+                { "key": "search", "value": "", "description": "full-text search" },
+                { "key": "sortBy", "value": "createdAt", "disabled": true },
+                { "key": "sortOrder", "value": "desc", "disabled": true }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Task",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  const json = pm.response.json();",
+                  "  pm.collectionVariables.set('taskId', json.task._id);",
+                  "  pm.test('Task created', () => pm.response.to.have.status(201));",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{authToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/api/v1/tasks",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Build REST API with JWT Auth\",\n  \"description\": \"Implement all CRUD endpoints with role-based access\",\n  \"status\": \"todo\",\n  \"priority\": \"high\",\n  \"dueDate\": \"2026-12-31T23:59:00.000Z\",\n  \"tags\": [\"backend\", \"api\", \"jwt\"]\n}"
+            }
+          }
+        },
+        {
+          "name": "Get Task by ID",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "url": "{{baseUrl}}/api/v1/tasks/{{taskId}}"
+          }
+        },
+        {
+          "name": "Update Task",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{authToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/api/v1/tasks/{{taskId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Build REST API with JWT Auth (Updated)\",\n  \"status\": \"in-progress\",\n  \"priority\": \"high\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Get Task Stats",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "url": "{{baseUrl}}/api/v1/tasks/stats"
+          }
+        },
+        {
+          "name": "Archive Task",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "url": "{{baseUrl}}/api/v1/tasks/{{taskId}}/archive"
+          }
+        },
+        {
+          "name": "Delete Task",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "url": "{{baseUrl}}/api/v1/tasks/{{taskId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "👤 User Profile",
+      "item": [
+        {
+          "name": "Get Profile",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "url": "{{baseUrl}}/api/v1/users/profile"
+          }
+        },
+        {
+          "name": "Update Profile",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{authToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/api/v1/users/profile",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"John Updated Doe\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Deactivate Account",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "url": "{{baseUrl}}/api/v1/users/profile"
+          }
+        }
+      ]
+    },
+    {
+      "name": "🛡️ Admin",
+      "description": "Requires admin role. Login as admin first.",
+      "item": [
+        {
+          "name": "Get Platform Stats",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "url": "{{baseUrl}}/api/v1/admin/stats"
+          }
+        },
+        {
+          "name": "Get All Users",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/users?page=1&limit=10&role=&isActive=",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "admin", "users"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "10" },
+                { "key": "role", "value": "", "description": "user | admin" },
+                { "key": "isActive", "value": "", "description": "true | false" },
+                { "key": "search", "value": "", "disabled": true }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get User by ID",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "url": "{{baseUrl}}/api/v1/admin/users/{{userId}}"
+          }
+        },
+        {
+          "name": "Promote User to Admin",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{authToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/users/{{userId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"role\": \"admin\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Deactivate User",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{authToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/api/v1/admin/users/{{userId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"isActive\": false\n}"
+            }
+          }
+        },
+        {
+          "name": "Delete User",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "url": "{{baseUrl}}/api/v1/admin/users/{{userId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "🏥 Health",
+      "item": [
+        {
+          "name": "Health Check",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('API is healthy', () => pm.response.to.have.status(200));",
+                  "pm.test('Response has status field', () => {",
+                  "  pm.expect(pm.response.json().status).to.equal('healthy');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/health"
+          }
+        }
+      ]
+    }
+  ]
+}

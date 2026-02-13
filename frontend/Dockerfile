@@ -1,0 +1,44 @@
+# Build stage
+FROM node:20-alpine AS build
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci
+COPY . .
+RUN npm run build
+
+# Production stage with nginx
+FROM nginx:alpine AS production
+COPY --from=build /app/build /usr/share/nginx/html
+
+# Nginx config for React Router (SPA support)
+RUN cat > /etc/nginx/conf.d/default.conf << 'EOF'
+server {
+    listen 80;
+    server_name localhost;
+    root /usr/share/nginx/html;
+    index index.html;
+
+    # Gzip compression
+    gzip on;
+    gzip_types text/plain text/css application/json application/javascript;
+
+    # React Router support - serve index.html for all routes
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    # Cache static assets
+    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg)$ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+    }
+
+    # Security headers
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-XSS-Protection "1; mode=block" always;
+}
+EOF
+
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]
