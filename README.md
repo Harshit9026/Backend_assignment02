@@ -48,7 +48,7 @@ cd taskflow-api
 ### 2. Setup Backend
 ```bash
 cd backend
-cp .env.example .env
+cp .env
 # Edit .env with your MongoDB URI and JWT secrets
 npm install
 npm run dev
